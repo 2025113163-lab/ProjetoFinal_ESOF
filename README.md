@@ -2,11 +2,10 @@
 
 
 ## Visão do Produto
-O Museu Nacional Soares dos Reis (MNSR), fundado em 1833 e sediado no Palácio dos Carrancas no Porto,
-enfrenta um desafio crítico de atratividade e retenção. Apesar do acervo riquíssimo de escultura e pintura, o
-museu regista apenas cerca de 85.000 visitantes/ano, em contraste drástico com os 1.200.000 da Livraria Lello
-ou 500.000 de Serralves.
 
-Adicionalmente, 62% do público atual é composto por seniores em excursões e apenas 15% por
-jovens/estudantes, com um tempo médio de permanência reduzido de 42 minutos. O objetivo da App MNSR
-Digital é inverter este cenário através de tecnologia móvel interativa.
+**PARA** os jovens, estudantes, famílias e turistas culturais que visitam a cidade do Porto,
+**QUE** procuram uma experiência museológica envolvente, dinâmica e altamente personalizada,
+**A APP MNSR DIGITAL** é uma aplicação móvel inteligente, suportada por Inteligência Artificial e estratégias de gamificação,
+**QUE** oferece roteiros inteligentes adaptáveis (visando aumentar o tempo de permanência atual de 42 minutos), um sistema de caça ao tesouro imersivo via QR Codes para cativar o público mais jovem, e um guia conversacional cognitivo (IA/RAG) capaz de responder dinamicamente a dúvidas sobre o acervo,
+**AO CONTRÁRIO DOS** tradicionais guias áudio estáticos e brochuras em papel unidirecionais que não retêm a atenção das novas gerações,
+**O NOSSO PRODUTO** inverte a estagnação de visitantes, moderniza o envolvimento com as obras de arte, promove a atratividade do museu face a outros polos da cidade e permite à gestão do museu otimizar de forma eficiente o fluxo de pessoas nas salas.
