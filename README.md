@@ -9,3 +9,7 @@
 **QUE** oferece roteiros inteligentes adaptáveis (visando aumentar o tempo de permanência atual de 42 minutos), um sistema de caça ao tesouro imersivo via QR Codes para cativar o público mais jovem, e um guia conversacional cognitivo (IA/RAG) capaz de responder dinamicamente a dúvidas sobre o acervo,
 **AO CONTRÁRIO DOS** tradicionais guias áudio estáticos e brochuras em papel unidirecionais que não retêm a atenção das novas gerações,
 **O NOSSO PRODUTO** inverte a estagnação de visitantes, moderniza o envolvimento com as obras de arte, promove a atratividade do museu face a outros polos da cidade e permite à gestão do museu otimizar de forma eficiente o fluxo de pessoas nas salas.
+
+### Documentação
+- Product Backlog: [MNSR Digital — Product Backlog](https://github.com/users/2025113163-lab/projects/1)
+- Matriz de rastreabilidade: [docs/TRACEABILITY.md](docs/TRACEABILITY.md)
