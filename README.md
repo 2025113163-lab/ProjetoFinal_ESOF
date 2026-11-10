@@ -1,4 +1,3 @@
-# Ficha2_ESOF
 
 # MNSR Digital
 
