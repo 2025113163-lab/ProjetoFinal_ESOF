@@ -1,12 +1,11 @@
-import contextvars
-import json
-import logging
-import os
-import uuid
+import contextvars, json, logging, os, uuid, unicodedata
+
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
+from typing import Any
+from fastapi import FastAPI, HTTPException, Query, Request
+from pydantic import BaseModel
 
-from fastapi import FastAPI, Query, Request
 
 request_id_ctx: contextvars.ContextVar[str] = contextvars.ContextVar(
     "request_id", default="system"
@@ -271,4 +270,128 @@ def obter_roteiro(
             }
             for o in roteiro.obras
         ],
+    }
+
+
+
+# --- Caça ao Tesouro (QR Code + Padrão Factory) ---
+
+
+def _normalizar(texto: str) -> str:
+    """Remove acentos, espaços laterais e diferenças de maiúsculas."""
+    sem_acentos = "".join(
+        c for c in unicodedata.normalize("NFD", texto) if not unicodedata.combining(c)
+    )
+    return sem_acentos.casefold().strip()
+
+
+def _obra_por_codigo(codigo: str) -> Obra | None:
+    return next((o for o in carregar_museu_json() if o.codigo_qr == codigo), None)
+
+
+class QRCode:
+
+    def __init__(self, codigo: Any = None, estado: str = "pendente"):
+        self.codigo = codigo
+        self.estado = estado
+
+    def validar(self) -> bool:
+        if self.estado in ("validado", "repetido"):
+            self.estado = "repetido"
+        elif self.codigo is None:
+            self.estado = "nulo"
+        elif isinstance(self.codigo, str) and not self.codigo.strip():
+            self.estado = "vazio"
+        elif not isinstance(self.codigo, str) or _obra_por_codigo(self.codigo) is None:
+            self.estado = "corrompido"
+        else:
+            self.estado = "validado"
+        logger.info(
+            "QR Code validado",
+            extra={"extra_data": {"codigo": str(self.codigo), "estado": self.estado}},
+        )
+        return self.estado == "validado"
+
+
+class Desafio:
+    def __init__(self, pergunta: str, resposta_correta: str):
+        self.pergunta = pergunta
+        self.resolvido = False
+        self._resposta_correta = resposta_correta
+
+    def verificarResposta(self, resposta: str) -> bool:
+        correta = isinstance(resposta, str) and (
+            _normalizar(resposta) == _normalizar(self._resposta_correta)
+        )
+        if correta:
+            self.resolvido = True
+        return correta
+
+
+class DesafioFactory:
+    def criarDesafio(self, dadosQR: QRCode) -> Desafio:
+        obra = _obra_por_codigo(dadosQR.codigo) if dadosQR.estado == "validado" else None
+        if obra is None:
+            raise ValueError("QRCode não validado: não é possível criar o desafio")
+        if obra.autor and obra.autor != "Desconhecido":
+            return Desafio(f"Quem é o autor da obra '{obra.titulo}'?", obra.autor)
+        return Desafio(f"Em que sala está exposta a obra '{obra.titulo}'?", obra.sala)
+
+
+class PedidoQR(BaseModel):
+    codigo: Any = None
+    sessao: str = "anonima"  # modo anónimo (US-04): sem PII, só um identificador
+
+
+# Progresso em memória por sessão: {sessao: {codigo_qr: (QRCode, Desafio)}}
+_SESSOES: dict[str, dict[str, tuple[QRCode, Desafio]]] = {}
+
+_STATUS_QR = {"nulo": 400, "vazio": 400, "corrompido": 422, "repetido": 409}
+
+
+@app.post("/qr/validar")
+def validar_qr(pedido: PedidoQR) -> dict:
+    progresso = _SESSOES.setdefault(pedido.sessao, {})
+    existente = progresso.get(pedido.codigo) if isinstance(pedido.codigo, str) else None
+    qr = existente[0] if existente else QRCode(pedido.codigo)
+
+    if not qr.validar():
+        raise HTTPException(
+            status_code=_STATUS_QR[qr.estado],
+            detail={"valido": False, "estado": qr.estado},
+        )
+
+    desafio = DesafioFactory().criarDesafio(qr)
+    progresso[qr.codigo] = (qr, desafio)
+    obra = _obra_por_codigo(qr.codigo)
+    return {
+        "valido": True,
+        "estado": qr.estado,
+        "codigo": qr.codigo,
+        "obra": {"id": obra.id, "titulo": obra.titulo, "sala": obra.sala},
+        "desafio": {"pergunta": desafio.pergunta, "resolvido": desafio.resolvido},
+    }
+
+
+@app.get("/pistas")
+def listar_pistas(sessao: str = "anonima") -> dict:
+    progresso = _SESSOES.get(sessao, {})
+    pistas = []
+    for codigo, (_, desafio) in progresso.items():
+        obra = _obra_por_codigo(codigo)
+        pistas.append(
+            {
+                "codigo_qr": codigo,
+                "obra_id": obra.id,
+                "titulo": obra.titulo,
+                "sala": obra.sala,
+                "pergunta": desafio.pergunta,
+                "resolvido": desafio.resolvido,
+            }
+        )
+    return {
+        "sessao": sessao,
+        "total_obras": len(carregar_museu_json()),
+        "desbloqueadas": len(pistas),
+        "pistas": pistas,
     }
