@@ -1,9 +1,122 @@
-{
+[
+  {
     "id": 1,
-    "Titulo": "MNSR ",
-    "autor": 1793,
-    "sala": "O Museu do Louvre é um dos maiores e mais famosos museus do mundo, abrigando uma das coleções de arte mais extensas e importantes.",
-    "tema": "Arte e Cultura",
-    "minutos_visita": 120,
-    "codigoQR": "https://example.com/mnsr_qr_code.png"
-}
+    "Titulo": "O Desterrado (António Soares dos Reis)",
+    "sala": "Sala de Escultura",
+    "tema": "Tesouros Nacionais",
+    "minutos_visita": 10,
+    "codigoQR": "https://example.com/mnsr_qr_code_01.png"
+  },
+  {
+    "id": 2,
+    "Titulo": "Autorretrato de Aurélia de Souza",
+    "sala": "Sala de Pintura",
+    "tema": "Tesouros Nacionais",
+    "minutos_visita": 8,
+    "codigoQR": "https://example.com/mnsr_qr_code_02.png"
+  },
+  {
+    "id": 3,
+    "Titulo": "Pote (Dinastia Ming, período Jiajing)",
+    "sala": "Sala de Cerâmica",
+    "tema": "Cerâmica",
+    "minutos_visita": 5,
+    "codigoQR": "https://example.com/mnsr_qr_code_03.png"
+  },
+  {
+    "id": 4,
+    "Titulo": "Virgem com o Menino",
+    "sala": "Sala de Cerâmica",
+    "tema": "Cerâmica",
+    "minutos_visita": 5,
+    "codigoQR": "https://example.com/mnsr_qr_code_04.png"
+  },
+  {
+    "id": 5,
+    "Titulo": "Hermafrodita adormecido",
+    "sala": "Sala de Diversos",
+    "tema": "Diversos",
+    "minutos_visita": 6,
+    "codigoQR": "https://example.com/mnsr_qr_code_05.png"
+  },
+  {
+    "id": 6,
+    "Titulo": "Série de 26 Placas em esmalte com cenas da Paixão de Cristo",
+    "sala": "Sala de Diversos",
+    "tema": "Diversos",
+    "minutos_visita": 7,
+    "codigoQR": "https://example.com/mnsr_qr_code_06.png"
+  },
+  {
+    "id": 7,
+    "Titulo": "Infância de Caim (António Teixeira Lopes)",
+    "sala": "Sala de Escultura",
+    "tema": "Escultura",
+    "minutos_visita": 8,
+    "codigoQR": "https://example.com/mnsr_qr_code_07.png"
+  },
+  {
+    "id": 8,
+    "Titulo": "Planta da Cidade do Porto (Frederico Perry Vidal)",
+    "sala": "Sala de Gravura",
+    "tema": "Gravura",
+    "minutos_visita": 6,
+    "codigoQR": "https://example.com/mnsr_qr_code_08.png"
+  },
+  {
+    "id": 9,
+    "Titulo": "Pedra com Insculturas",
+    "sala": "Sala de Lapidária",
+    "tema": "Lapidária",
+    "minutos_visita": 7,
+    "codigoQR": "https://example.com/mnsr_qr_code_09.png"
+  },
+  {
+    "id": 10,
+    "Titulo": "Biombos Namban",
+    "sala": "Sala de Mobiliário",
+    "tema": "Mobiliário",
+    "minutos_visita": 10,
+    "codigoQR": "https://example.com/mnsr_qr_code_10.png"
+  },
+  {
+    "id": 11,
+    "Titulo": "Par de tremós",
+    "sala": "Sala de Mobiliário",
+    "tema": "Mobiliário",
+    "minutos_visita": 6,
+    "codigoQR": "https://example.com/mnsr_qr_code_11.png"
+  },
+  {
+    "id": 12,
+    "Titulo": "Anel episcopal",
+    "sala": "Sala de Ourivesaria e Joalharia",
+    "tema": "Ourivesaria e Joalharia",
+    "minutos_visita": 5,
+    "codigoQR": "https://example.com/mnsr_qr_code_12.png"
+  },
+  {
+    "id": 13,
+    "Titulo": "Casas de Malakoff (Dordio Gomes)",
+    "sala": "Sala de Pintura",
+    "tema": "Pintura",
+    "minutos_visita": 7,
+    "codigoQR": "https://example.com/mnsr_qr_code_13.png"
+  },
+  {
+    "id": 14,
+    "Titulo": "Tapete de Arraiolos",
+    "sala": "Sala de Têxtil",
+    "tema": "Têxtil",
+    "minutos_visita": 6,
+    "codigoQR": "https://example.com/mnsr_qr_code_14.png"
+  },
+  {
+    "id": 15,
+    "Titulo": "Cálice",
+    "sala": "Sala de Vidro",
+    "tema": "Vidro",
+    "minutos_visita": 5,
+    "codigoQR": "https://example.com/mnsr_qr_code_15.png"
+  }
+]
