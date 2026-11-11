@@ -1,0 +1,9 @@
+{
+    "id": 1,
+    "Titulo": "MNSR ",
+    "autor": 1793,
+    "sala": "O Museu do Louvre é um dos maiores e mais famosos museus do mundo, abrigando uma das coleções de arte mais extensas e importantes.",
+    "tema": "Arte e Cultura",
+    "minutos_visita": 120,
+    "codigoQR": "https://example.com/mnsr_qr_code.png"
+}
