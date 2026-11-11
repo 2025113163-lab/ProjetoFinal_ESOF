@@ -1,122 +1,137 @@
 [
   {
     "id": 1,
-    "Titulo": "O Desterrado (António Soares dos Reis)",
+    "titulo": "O Desterrado",
+    "autor": "António Soares dos Reis",
     "sala": "Sala de Escultura",
-    "tema": "Tesouros Nacionais",
+    "tema": "Escultura",
     "minutos_visita": 10,
-    "codigoQR": "https://example.com/mnsr_qr_code_01.png"
+    "codigo_qr": "MNSR-QR-01"
   },
   {
     "id": 2,
-    "Titulo": "Autorretrato de Aurélia de Souza",
+    "titulo": "Autorretrato",
+    "autor": "Aurélia de Souza",
     "sala": "Sala de Pintura",
-    "tema": "Tesouros Nacionais",
+    "tema": "Pintura",
     "minutos_visita": 8,
-    "codigoQR": "https://example.com/mnsr_qr_code_02.png"
+    "codigo_qr": "MNSR-QR-02"
   },
   {
     "id": 3,
-    "Titulo": "Pote (Dinastia Ming, período Jiajing)",
+    "titulo": "Pote (Dinastia Ming, período Jiajing)",
+    "autor": "Desconhecido",
     "sala": "Sala de Cerâmica",
     "tema": "Cerâmica",
     "minutos_visita": 5,
-    "codigoQR": "https://example.com/mnsr_qr_code_03.png"
+    "codigo_qr": "MNSR-QR-03"
   },
   {
     "id": 4,
-    "Titulo": "Virgem com o Menino",
+    "titulo": "Virgem com o Menino",
+    "autor": "Desconhecido",
     "sala": "Sala de Cerâmica",
     "tema": "Cerâmica",
     "minutos_visita": 5,
-    "codigoQR": "https://example.com/mnsr_qr_code_04.png"
+    "codigo_qr": "MNSR-QR-04"
   },
   {
     "id": 5,
-    "Titulo": "Hermafrodita adormecido",
+    "titulo": "Hermafrodita adormecido",
+    "autor": "Desconhecido",
     "sala": "Sala de Diversos",
-    "tema": "Diversos",
+    "tema": "Escultura",
     "minutos_visita": 6,
-    "codigoQR": "https://example.com/mnsr_qr_code_05.png"
+    "codigo_qr": "MNSR-QR-05"
   },
   {
     "id": 6,
-    "Titulo": "Série de 26 Placas em esmalte com cenas da Paixão de Cristo",
+    "titulo": "Série de 26 Placas em esmalte com cenas da Paixão de Cristo",
+    "autor": "Oficina de Limoges",
     "sala": "Sala de Diversos",
     "tema": "Diversos",
     "minutos_visita": 7,
-    "codigoQR": "https://example.com/mnsr_qr_code_06.png"
+    "codigo_qr": "MNSR-QR-06"
   },
   {
     "id": 7,
-    "Titulo": "Infância de Caim (António Teixeira Lopes)",
+    "titulo": "Infância de Caim",
+    "autor": "António Teixeira Lopes",
     "sala": "Sala de Escultura",
     "tema": "Escultura",
     "minutos_visita": 8,
-    "codigoQR": "https://example.com/mnsr_qr_code_07.png"
+    "codigo_qr": "MNSR-QR-07"
   },
   {
     "id": 8,
-    "Titulo": "Planta da Cidade do Porto (Frederico Perry Vidal)",
+    "titulo": "Planta da Cidade do Porto",
+    "autor": "Frederico Perry Vidal",
     "sala": "Sala de Gravura",
     "tema": "Gravura",
     "minutos_visita": 6,
-    "codigoQR": "https://example.com/mnsr_qr_code_08.png"
+    "codigo_qr": "MNSR-QR-08"
   },
   {
     "id": 9,
-    "Titulo": "Pedra com Insculturas",
+    "titulo": "Pedra com Insculturas",
+    "autor": "Desconhecido",
     "sala": "Sala de Lapidária",
     "tema": "Lapidária",
     "minutos_visita": 7,
-    "codigoQR": "https://example.com/mnsr_qr_code_09.png"
+    "codigo_qr": "MNSR-QR-09"
   },
   {
     "id": 10,
-    "Titulo": "Biombos Namban",
+    "titulo": "Biombos Namban",
+    "autor": "Escola Kano",
     "sala": "Sala de Mobiliário",
     "tema": "Mobiliário",
     "minutos_visita": 10,
-    "codigoQR": "https://example.com/mnsr_qr_code_10.png"
+    "codigo_qr": "MNSR-QR-10"
   },
   {
     "id": 11,
-    "Titulo": "Par de tremós",
+    "titulo": "Par de tremós",
+    "autor": "Desconhecido",
     "sala": "Sala de Mobiliário",
     "tema": "Mobiliário",
     "minutos_visita": 6,
-    "codigoQR": "https://example.com/mnsr_qr_code_11.png"
+    "codigo_qr": "MNSR-QR-11"
   },
   {
     "id": 12,
-    "Titulo": "Anel episcopal",
+    "titulo": "Anel episcopal",
+    "autor": "Desconhecido",
     "sala": "Sala de Ourivesaria e Joalharia",
     "tema": "Ourivesaria e Joalharia",
     "minutos_visita": 5,
-    "codigoQR": "https://example.com/mnsr_qr_code_12.png"
+    "codigo_qr": "MNSR-QR-12"
   },
   {
     "id": 13,
-    "Titulo": "Casas de Malakoff (Dordio Gomes)",
+    "titulo": "Casas de Malakoff",
+    "autor": "Dordio Gomes",
     "sala": "Sala de Pintura",
     "tema": "Pintura",
     "minutos_visita": 7,
-    "codigoQR": "https://example.com/mnsr_qr_code_13.png"
+    "codigo_qr": "MNSR-QR-13"
   },
   {
     "id": 14,
-    "Titulo": "Tapete de Arraiolos",
+    "titulo": "Tapete de Arraiolos",
+    "autor": "Oficina de Arraiolos",
     "sala": "Sala de Têxtil",
     "tema": "Têxtil",
     "minutos_visita": 6,
-    "codigoQR": "https://example.com/mnsr_qr_code_14.png"
+    "codigo_qr": "MNSR-QR-14"
   },
   {
     "id": 15,
-    "Titulo": "Cálice",
+    "titulo": "Cálice",
+    "autor": "Desconhecido",
     "sala": "Sala de Vidro",
     "tema": "Vidro",
     "minutos_visita": 5,
-    "codigoQR": "https://example.com/mnsr_qr_code_15.png"
+    "codigo_qr": "MNSR-QR-15"
   }
 ]

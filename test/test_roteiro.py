@@ -1,12 +1,14 @@
 import unittest
+
 from fastapi.testclient import TestClient
+
 from src.main import (
+    RotaFamiliar,
+    RotaMaisCurta,
+    RotaMenosCrowded,
     app,
     carregar_museu_json,
     gerador_roteiro,
-    RotaMaisCurta,
-    RotaMenosCrowded,
-    RotaFamiliar,
 )
 
 client = TestClient(app)

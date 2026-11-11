@@ -3,3 +3,6 @@ __pycache__/
 .pytest_cache/
 .coverage
 .env
+/repo_context.txt
+/contexto_mnsr.txt
+repo_context*.txt
