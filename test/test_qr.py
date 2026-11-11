@@ -1,6 +1,7 @@
 import unittest
 
 from fastapi.testclient import TestClient
+
 from src.main import _SESSOES, Desafio, DesafioFactory, QRCode, app
 
 client = TestClient(app)
