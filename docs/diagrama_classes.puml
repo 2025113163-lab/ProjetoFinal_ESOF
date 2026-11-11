@@ -1,0 +1,87 @@
+@startuml
+skinparam classAttributeIconSize 0
+hide empty members
+
+' --- Domínio Base (Alinhado com src/main.py) ---
+class Sala {
+  - nome: String
+  - obras: List<Obra>
+  + adicionar_obra(obra: Obra)
+}
+
+class Obra {
+  - id: int
+  - titulo: String
+  - autor: String
+  - minutos_visita: int
+}
+
+class Roteiro {
+  - nome: String
+  - salas: List<Sala>
+  - obras: List<Obra>
+  + adicionar_obra(obra: Obra)
+  + calcular_tempo_total(): int
+}
+
+Sala "1" o-- "0..*" Obra : contém >
+Roteiro "1" o-- "0..*" Obra : inclui >
+
+' --- Módulo A: Roteiros (Padrão Strategy) ---
+interface RoteiroStrategy {
+  + calcularRota(obras: List<Obra>): List<Obra>
+}
+
+class RotaMaisCurta implements RoteiroStrategy {
+  + calcularRota(obras: List<Obra>): List<Obra>
+}
+
+class RotaMenosCrowded implements RoteiroStrategy {
+  + calcularRota(obras: List<Obra>): List<Obra>
+}
+
+class RotaFamiliar implements RoteiroStrategy {
+  + calcularRota(obras: List<Obra>): List<Obra>
+}
+
+Roteiro "1" *-- "1" RoteiroStrategy : utiliza >
+
+' --- Módulo B: Caça ao Tesouro (Padrão Factory) ---
+class QRCode {
+  - codigo: String
+  - estado: String
+  + validar(): boolean
+}
+
+class Desafio {
+  - pergunta: String
+  - resolvido: boolean
+  + verificarResposta(resposta: String): boolean
+}
+
+class DesafioFactory {
+  + criarDesafio(dadosQR: QRCode): Desafio
+}
+
+DesafioFactory ..> Desafio : <<instancia>>
+Desafio "1" -- "1" QRCode : associado a >
+
+' --- Padrão Observer (Monitorização) ---
+class AfluenciaSala {
+  - visitantesAtuais: int
+  - limiteMaximo: int
+  + registarEntrada()
+  + registarSaida()
+  + notificarLimiar()
+}
+
+AfluenciaSala "1" -- "1" Sala : monitoriza >
+
+' --- Módulo RAG (Inteligência Artificial) ---
+class AssistenteIA {
+  + responderPergunta(obra: Obra, pergunta: String): String
+}
+
+AssistenteIA ..> Obra : consulta contexto >
+
+@enduml
