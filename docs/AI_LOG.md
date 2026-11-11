@@ -3,3 +3,5 @@
 | Data | Membro | Ferramenta | Prompt / Contexto | Resultado Gerado | Validação / Ação Humana |
 |---|---|---|---|---|---|
 | 2026-11-11 | Robi | Gemini / Claude | Padronização do `data/museu.json`, implementação do Módulo A (`gerador_roteiro`), padrão `RoteiroStrategy` (`RotaMaisCurta`, `RotaMenosCrowded`, `RotaFamiliar`) e testes unitários em `test/test_roteiro.py`. | Código das classes de domínio, 3 estratégias concretas, endpoint `GET /roteiros` e suite de 5 testes unitários. | Revisto e testado localmente com `pytest --cov=src`. Corrigida a chave `Titulo`/`autor` no JSON e validada cobertura de 90% (6/6 testes a passar). |
+
+| 2026-11-11 | Robi | Gemini | Criação do pipeline `.github/workflows/ci.yml` com `ruff` e `pytest --cov=src --cov-fail-under=80` e implementação de logging estruturado em JSON com `request_id` em `src/main.py`. | Workflow GitHub Actions com Quality Gate de 80%, `JSONFormatter` e middleware HTTP para injeção e propagação de `X-Request-ID`. | Validado localmente com `ruff check src/ test/` (0 erros) e `python -m pytest --cov=src --cov-fail-under=80`, confirmando a emissão de logs em JSON com `request_id` e cobertura superior a 90%. |
