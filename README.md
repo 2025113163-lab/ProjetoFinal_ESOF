@@ -1,3 +1,4 @@
+[![CI - MNSR Digital](https://github.com/2025113163-lab/ProjetoFinal_ESOF/actions/workflows/ci.yml/badge.svg)](https://github.com/2025113163-lab/ProjetoFinal_ESOF/actions/workflows/ci.yml)
 
 # MNSR Digital
 
