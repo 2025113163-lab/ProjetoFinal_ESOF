@@ -277,8 +277,7 @@ def obter_roteiro(
     }
 
 
-
-# --- Caça ao Tesouro (QR Code + Padrão Factory) ---
+# --- Módulo B: Caça ao Tesouro (QR Code + Padrão Factory) ---
 
 
 def _normalizar(texto: str) -> str:
@@ -293,7 +292,15 @@ def _obra_por_codigo(codigo: str) -> Obra | None:
     return next((o for o in carregar_museu_json() if o.codigo_qr == codigo), None)
 
 
+def _obra_seguinte(obra: Obra) -> Obra:
+    """Próxima obra do acervo (circular), usada na pista de tipo 'qr'."""
+    obras = carregar_museu_json()
+    indice = next(i for i, o in enumerate(obras) if o.id == obra.id)
+    return obras[(indice + 1) % len(obras)]
+
+
 class QRCode:
+    """Estados: pendente, validado, nulo, vazio, corrompido, repetido."""
 
     def __init__(self, codigo: Any = None, estado: str = "pendente"):
         self.codigo = codigo
@@ -318,6 +325,8 @@ class QRCode:
 
 
 class Desafio:
+    tipo = "pergunta"
+
     def __init__(self, pergunta: str, resposta_correta: str):
         self.pergunta = pergunta
         self.resolvido = False
@@ -332,19 +341,88 @@ class Desafio:
         return correta
 
 
+class DesafioPergunta(Desafio):
+    """Pergunta sobre a obra (autor ou sala)."""
+
+    tipo = "pergunta"
+
+
+class DesafioQR(Desafio):
+    """Pista que leva ao QR Code da obra seguinte."""
+
+    tipo = "qr"
+
+
+class DesafioBeacon(Desafio):
+    """Aproximação a um beacon Bluetooth (simulado: o cliente envia o id)."""
+
+    tipo = "beacon"
+
+
 class DesafioFactory:
-    def criarDesafio(self, dadosQR: QRCode) -> Desafio:
+    TIPOS = ("pergunta", "qr", "beacon")
+
+    def criarDesafio(self, dadosQR: QRCode, tipo: str = "pergunta") -> Desafio:
+        if tipo not in self.TIPOS:
+            raise ValueError(f"Tipo de desafio desconhecido: {tipo}")
         obra = _obra_por_codigo(dadosQR.codigo) if dadosQR.estado == "validado" else None
         if obra is None:
             raise ValueError("QRCode não validado: não é possível criar o desafio")
+
+        if tipo == "qr":
+            alvo = _obra_seguinte(obra)
+            return DesafioQR(
+                f"Pista: procura o QR Code da obra '{alvo.titulo}' ({alvo.sala}).",
+                alvo.codigo_qr,
+            )
+        if tipo == "beacon":
+            return DesafioBeacon(
+                f"Aproxima-te da obra '{obra.titulo}' ({obra.sala}). "
+                "Qual o identificador do beacon detetado?",
+                obra.codigo_qr.replace("-QR-", "-BCN-"),
+            )
         if obra.autor and obra.autor != "Desconhecido":
-            return Desafio(f"Quem é o autor da obra '{obra.titulo}'?", obra.autor)
-        return Desafio(f"Em que sala está exposta a obra '{obra.titulo}'?", obra.sala)
+            return DesafioPergunta(
+                f"Quem é o autor da obra '{obra.titulo}'?", obra.autor
+            )
+        return DesafioPergunta(
+            f"Em que sala está exposta a obra '{obra.titulo}'?", obra.sala
+        )
+
+
+class Recompensa:
+    """Medalha e desconto na loja/cafetaria conforme os desafios resolvidos."""
+
+    # (mínimo de desafios resolvidos, medalha, desconto em %), do nível mais alto
+    NIVEIS = ((10, "Ouro", 15), (6, "Prata", 10), (3, "Bronze", 5))
+
+    def __init__(self, resolvidos: int = 0):
+        self.resolvidos = max(0, resolvidos)
+        self.medalha: str | None = None
+        self.desconto = 0
+        for minimo, nome, desconto in self.NIVEIS:
+            if self.resolvidos >= minimo:
+                self.medalha, self.desconto = nome, desconto
+                break
+
+    def como_dict(self) -> dict:
+        return {
+            "resolvidas": self.resolvidos,
+            "medalha": self.medalha,
+            "desconto_percentagem": self.desconto,
+        }
 
 
 class PedidoQR(BaseModel):
     codigo: Any = None
     sessao: str = "anonima"  # modo anónimo (US-04): sem PII, só um identificador
+    tipo: str = "pergunta"
+
+
+class PedidoResposta(BaseModel):
+    codigo: str
+    resposta: Any = None
+    sessao: str = "anonima"
 
 
 # Progresso em memória por sessão: {sessao: {codigo_qr: (QRCode, Desafio)}}
@@ -353,8 +431,17 @@ _SESSOES: dict[str, dict[str, tuple[QRCode, Desafio]]] = {}
 _STATUS_QR = {"nulo": 400, "vazio": 400, "corrompido": 422, "repetido": 409}
 
 
+def _recompensa_da_sessao(progresso: dict[str, tuple[QRCode, Desafio]]) -> Recompensa:
+    return Recompensa(sum(1 for _, desafio in progresso.values() if desafio.resolvido))
+
+
 @app.post("/qr/validar")
 def validar_qr(pedido: PedidoQR) -> dict:
+    if pedido.tipo not in DesafioFactory.TIPOS:
+        raise HTTPException(
+            status_code=400,
+            detail={"valido": False, "estado": "tipo_invalido"},
+        )
     progresso = _SESSOES.setdefault(pedido.sessao, {})
     existente = progresso.get(pedido.codigo) if isinstance(pedido.codigo, str) else None
     qr = existente[0] if existente else QRCode(pedido.codigo)
@@ -365,7 +452,7 @@ def validar_qr(pedido: PedidoQR) -> dict:
             detail={"valido": False, "estado": qr.estado},
         )
 
-    desafio = DesafioFactory().criarDesafio(qr)
+    desafio = DesafioFactory().criarDesafio(qr, pedido.tipo)
     progresso[qr.codigo] = (qr, desafio)
     obra = _obra_por_codigo(qr.codigo)
     return {
@@ -373,7 +460,25 @@ def validar_qr(pedido: PedidoQR) -> dict:
         "estado": qr.estado,
         "codigo": qr.codigo,
         "obra": {"id": obra.id, "titulo": obra.titulo, "sala": obra.sala},
-        "desafio": {"pergunta": desafio.pergunta, "resolvido": desafio.resolvido},
+        "desafio": {
+            "tipo": desafio.tipo,
+            "pergunta": desafio.pergunta,
+            "resolvido": desafio.resolvido,
+        },
+    }
+
+
+@app.post("/desafios/responder")
+def responder_desafio(pedido: PedidoResposta) -> dict:
+    progresso = _SESSOES.get(pedido.sessao, {})
+    if pedido.codigo not in progresso:
+        raise HTTPException(status_code=404, detail={"estado": "nao_desbloqueado"})
+    _, desafio = progresso[pedido.codigo]
+    correta = desafio.verificarResposta(pedido.resposta)
+    return {
+        "correta": correta,
+        "resolvido": desafio.resolvido,
+        "recompensa": _recompensa_da_sessao(progresso).como_dict(),
     }
 
 
@@ -389,6 +494,7 @@ def listar_pistas(sessao: str = "anonima") -> dict:
                 "obra_id": obra.id,
                 "titulo": obra.titulo,
                 "sala": obra.sala,
+                "tipo": desafio.tipo,
                 "pergunta": desafio.pergunta,
                 "resolvido": desafio.resolvido,
             }
@@ -397,5 +503,6 @@ def listar_pistas(sessao: str = "anonima") -> dict:
         "sessao": sessao,
         "total_obras": len(carregar_museu_json()),
         "desbloqueadas": len(pistas),
+        "recompensa": _recompensa_da_sessao(progresso).como_dict(),
         "pistas": pistas,
     }

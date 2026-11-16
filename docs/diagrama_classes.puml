@@ -46,7 +46,7 @@ class RotaFamiliar implements RoteiroStrategy {
 
 Roteiro "1" *-- "1" RoteiroStrategy : utiliza >
 
-' --- Módulo B: Caça ao Tesouro (Padrão Factory) ---
+' --- Módulo B: Caça ao Tesouro (Padrão Factory Method) ---
 class QRCode {
   - codigo: String
   - estado: String
@@ -57,15 +57,31 @@ class Desafio {
   - pergunta: String
   - resolvido: boolean
   - respostaCorreta: String
+  + tipo: String
   + verificarResposta(resposta: String): boolean
 }
 
+class DesafioPergunta extends Desafio
+class DesafioQR extends Desafio
+class DesafioBeacon extends Desafio
+
 class DesafioFactory {
-  + criarDesafio(dadosQR: QRCode): Desafio
+  + TIPOS: List<String>
+  + criarDesafio(dadosQR: QRCode, tipo: String): Desafio
 }
 
-DesafioFactory ..> Desafio : <<instancia>>
+class Recompensa {
+  - resolvidos: int
+  - medalha: String
+  - desconto: int
+  + como_dict(): Map
+}
+
+DesafioFactory ..> DesafioPergunta : <<instancia>>
+DesafioFactory ..> DesafioQR : <<instancia>>
+DesafioFactory ..> DesafioBeacon : <<instancia>>
 Desafio "1" -- "1" QRCode : associado a >
+Recompensa ..> Desafio : conta resolvidos >
 
 ' --- Padrão Observer (Monitorização) ---
 class AfluenciaSala {
