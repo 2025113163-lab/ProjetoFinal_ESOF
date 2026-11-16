@@ -29,29 +29,40 @@ Roteiro "1" o-- "0..*" Obra : inclui >
 
 ' --- Módulo A: Roteiros (Padrão Strategy) ---
 interface RoteiroStrategy {
-  + calcularRota(obras: List<Obra>): List<Obra>
+  + calcular_rota(obras: List<Obra>): List<Obra>
 }
 
 class RotaMaisCurta implements RoteiroStrategy {
-  + calcularRota(obras: List<Obra>): List<Obra>
+  + calcular_rota(obras: List<Obra>): List<Obra>
 }
 
 class RotaMenosCrowded implements RoteiroStrategy {
-  + calcularRota(obras: List<Obra>): List<Obra>
+  + calcular_rota(obras: List<Obra>): List<Obra>
 }
 
 class RotaFamiliar implements RoteiroStrategy {
-  + calcularRota(obras: List<Obra>): List<Obra>
+  + calcular_rota(obras: List<Obra>): List<Obra>
 }
 
 Roteiro "1" *-- "1" RoteiroStrategy : utiliza >
 
 ' --- Módulo B: Caça ao Tesouro (Padrão Factory Method) ---
+enum EstadoQR {
+  PENDENTE
+  VALIDADO
+  NULO
+  VAZIO
+  CORROMPIDO
+  REPETIDO
+}
+
 class QRCode {
   - codigo: String
-  - estado: String
+  - estado: EstadoQR
   + validar(): boolean
 }
+
+QRCode ..> EstadoQR : usa >
 
 class Desafio {
   - pergunta: String
