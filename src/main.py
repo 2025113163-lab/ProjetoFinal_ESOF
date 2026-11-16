@@ -252,14 +252,23 @@ def obter_roteiro(
     interesse: str | None = None,
     estrategia: str = "curta",
 ) -> dict:
+    logger.info(  # NUEVO
+        "Roteiro pedido: tempo=%s interesse=%s estrategia=%s",
+        tempo,
+        interesse,
+        estrategia,
+    )
     obras = carregar_museu_json()
     mapa_estrategias = {
         "curta": RotaMaisCurta(),
         "menos_crowded": RotaMenosCrowded(),
         "familiar": RotaFamiliar(),
     }
+    if estrategia not in mapa_estrategias:  # NUEVO
+        logger.warning("Estratégia desconhecida '%s': a usar 'curta'", estrategia)
     strat = mapa_estrategias.get(estrategia, RotaMaisCurta())
     roteiro = gerador_roteiro(obras, tempo, interesse, strategy=strat)
+    logger.info("Roteiro gerado: %s min", roteiro.calcular_tempo_total())  # NUEVO
     return {
         "nome": roteiro.nome,
         "tempo_total": roteiro.calcular_tempo_total(),
@@ -355,11 +364,15 @@ _STATUS_QR = {"nulo": 400, "vazio": 400, "corrompido": 422, "repetido": 409}
 
 @app.post("/qr/validar")
 def validar_qr(pedido: PedidoQR) -> dict:
+    logger.info("Validação de QR pedida: codigo=%r", pedido.codigo)  # NUEVO
     progresso = _SESSOES.setdefault(pedido.sessao, {})
     existente = progresso.get(pedido.codigo) if isinstance(pedido.codigo, str) else None
     qr = existente[0] if existente else QRCode(pedido.codigo)
 
     if not qr.validar():
+        logger.warning(  # NUEVO
+            "QR rejeitado: codigo=%r estado=%s", pedido.codigo, qr.estado
+        )
         raise HTTPException(
             status_code=_STATUS_QR[qr.estado],
             detail={"valido": False, "estado": qr.estado},
@@ -368,7 +381,8 @@ def validar_qr(pedido: PedidoQR) -> dict:
     desafio = DesafioFactory().criarDesafio(qr)
     progresso[qr.codigo] = (qr, desafio)
     obra = _obra_por_codigo(qr.codigo)
-    return {
+    logger.info("QR validado: codigo=%s obra=%s", qr.codigo, obra.id)  # NUEVO
+    return  {
         "valido": True,
         "estado": qr.estado,
         "codigo": qr.codigo,
