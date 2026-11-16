@@ -6,6 +6,7 @@ import unicodedata
 import uuid
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -286,8 +287,22 @@ def obter_roteiro(
     }
 
 
+# --- Módulo B: Caça ao Tesouro (QR Code + Padrão Factory) ---
 
-# --- Caça ao Tesouro (QR Code + Padrão Factory) ---
+AUTOR_DESCONHECIDO = "Desconhecido"
+ESTADO_TIPO_INVALIDO = "tipo_invalido"
+ESTADO_NAO_DESBLOQUEADO = "nao_desbloqueado"
+
+
+class EstadoQR(StrEnum):
+    """Estados possíveis de um QR Code durante a validação."""
+
+    PENDENTE = "pendente"
+    VALIDADO = "validado"
+    NULO = "nulo"
+    VAZIO = "vazio"
+    CORROMPIDO = "corrompido"
+    REPETIDO = "repetido"
 
 
 def _normalizar(texto: str) -> str:
@@ -302,37 +317,58 @@ def _obra_por_codigo(codigo: str) -> Obra | None:
     return next((o for o in carregar_museu_json() if o.codigo_qr == codigo), None)
 
 
-class QRCode:
+def _obra_seguinte(obra: Obra) -> Obra:
+    """Próxima obra do acervo (circular), usada na pista de tipo 'qr'."""
+    obras = carregar_museu_json()
+    indice = next(i for i, o in enumerate(obras) if o.id == obra.id)
+    return obras[(indice + 1) % len(obras)]
 
-    def __init__(self, codigo: Any = None, estado: str = "pendente"):
+
+class QRCode:
+    """QR Code lido pelo visitante: guarda o código e o estado da validação."""
+
+    def __init__(self, codigo: Any = None, estado: EstadoQR = EstadoQR.PENDENTE):
         self.codigo = codigo
         self.estado = estado
 
     def validar(self) -> bool:
-        if self.estado in ("validado", "repetido"):
-            self.estado = "repetido"
-        elif self.codigo is None:
-            self.estado = "nulo"
-        elif isinstance(self.codigo, str) and not self.codigo.strip():
-            self.estado = "vazio"
-        elif not isinstance(self.codigo, str) or _obra_por_codigo(self.codigo) is None:
-            self.estado = "corrompido"
+        """Valida o código. Só a primeira leitura de um QR válido devolve True."""
+        if self.estado in (EstadoQR.VALIDADO, EstadoQR.REPETIDO):
+            self.estado = EstadoQR.REPETIDO
         else:
-            self.estado = "validado"
+            self.estado = self._classificar()
         logger.info(
             "QR Code validado",
-            extra={"extra_data": {"codigo": str(self.codigo), "estado": self.estado}},
+            extra={
+                "extra_data": {"codigo": str(self.codigo), "estado": str(self.estado)}
+            },
         )
-        return self.estado == "validado"
+        return self.estado == EstadoQR.VALIDADO
+
+    def _classificar(self) -> EstadoQR:
+        if self.codigo is None:
+            return EstadoQR.NULO
+        if not isinstance(self.codigo, str):
+            return EstadoQR.CORROMPIDO
+        if not self.codigo.strip():
+            return EstadoQR.VAZIO
+        if _obra_por_codigo(self.codigo) is None:
+            return EstadoQR.CORROMPIDO
+        return EstadoQR.VALIDADO
 
 
 class Desafio:
+    """Desafio da caça ao tesouro: uma pergunta com uma resposta esperada."""
+
+    tipo = "pergunta"
+
     def __init__(self, pergunta: str, resposta_correta: str):
         self.pergunta = pergunta
         self.resolvido = False
         self._resposta_correta = resposta_correta
 
-    def verificarResposta(self, resposta: str) -> bool:
+    def verificarResposta(self, resposta: Any) -> bool:
+        """Compara ignorando acentos, maiúsculas e espaços laterais."""
         correta = isinstance(resposta, str) and (
             _normalizar(resposta) == _normalizar(self._resposta_correta)
         )
@@ -341,44 +377,171 @@ class Desafio:
         return correta
 
 
+class DesafioPergunta(Desafio):
+    """Pergunta sobre a obra (autor ou sala)."""
+
+    tipo = "pergunta"
+
+
+class DesafioQR(Desafio):
+    """Pista que leva ao QR Code da obra seguinte."""
+
+    tipo = "qr"
+
+
+class DesafioBeacon(Desafio):
+    """Aproximação a um beacon Bluetooth (simulado: o cliente envia o id)."""
+
+    tipo = "beacon"
+
+
 class DesafioFactory:
-    def criarDesafio(self, dadosQR: QRCode) -> Desafio:
-        obra = _obra_por_codigo(dadosQR.codigo) if dadosQR.estado == "validado" else None
+    """Factory Method: cria o tipo de desafio pedido para um QR já validado."""
+
+    TIPOS = ("pergunta", "qr", "beacon")
+
+    def criarDesafio(
+        self, dadosQR: QRCode, tipo: str = DesafioPergunta.tipo
+    ) -> Desafio:
+        if tipo not in self.TIPOS:
+            raise ValueError(f"Tipo de desafio desconhecido: {tipo}")
+        obra = (
+            _obra_por_codigo(dadosQR.codigo)
+            if dadosQR.estado == EstadoQR.VALIDADO
+            else None
+        )
         if obra is None:
             raise ValueError("QRCode não validado: não é possível criar o desafio")
-        if obra.autor and obra.autor != "Desconhecido":
-            return Desafio(f"Quem é o autor da obra '{obra.titulo}'?", obra.autor)
-        return Desafio(f"Em que sala está exposta a obra '{obra.titulo}'?", obra.sala)
+
+        criadores = {
+            "pergunta": self._criar_pergunta,
+            "qr": self._criar_qr,
+            "beacon": self._criar_beacon,
+        }
+        return criadores[tipo](obra)
+
+    @staticmethod
+    def _criar_pergunta(obra: Obra) -> DesafioPergunta:
+        if obra.autor and obra.autor != AUTOR_DESCONHECIDO:
+            return DesafioPergunta(
+                f"Quem é o autor da obra '{obra.titulo}'?", obra.autor
+            )
+        return DesafioPergunta(
+            f"Em que sala está exposta a obra '{obra.titulo}'?", obra.sala
+        )
+
+    @staticmethod
+    def _criar_qr(obra: Obra) -> DesafioQR:
+        alvo = _obra_seguinte(obra)
+        return DesafioQR(
+            f"Pista: procura o QR Code da obra '{alvo.titulo}' ({alvo.sala}).",
+            alvo.codigo_qr,
+        )
+
+    @staticmethod
+    def _criar_beacon(obra: Obra) -> DesafioBeacon:
+        return DesafioBeacon(
+            f"Aproxima-te da obra '{obra.titulo}' ({obra.sala}). "
+            "Qual o identificador do beacon detetado?",
+            obra.codigo_qr.replace("-QR-", "-BCN-"),
+        )
+
+
+class Recompensa:
+    """Medalha e desconto na loja/cafetaria conforme os desafios resolvidos."""
+
+    # (mínimo de desafios resolvidos, medalha, desconto em %), do nível mais alto
+    NIVEIS = ((10, "Ouro", 15), (6, "Prata", 10), (3, "Bronze", 5))
+
+    def __init__(self, resolvidos: int = 0):
+        self.resolvidos = max(0, resolvidos)
+        self.medalha: str | None = None
+        self.desconto = 0
+        for minimo, nome, desconto in self.NIVEIS:
+            if self.resolvidos >= minimo:
+                self.medalha, self.desconto = nome, desconto
+                break
+
+    def como_dict(self) -> dict:
+        return {
+            "resolvidas": self.resolvidos,
+            "medalha": self.medalha,
+            "desconto_percentagem": self.desconto,
+        }
 
 
 class PedidoQR(BaseModel):
     codigo: Any = None
     sessao: str = "anonima"  # modo anónimo (US-04): sem PII, só um identificador
+    tipo: str = DesafioPergunta.tipo
 
 
-# Progresso em memória por sessão: {sessao: {codigo_qr: (QRCode, Desafio)}}
-_SESSOES: dict[str, dict[str, tuple[QRCode, Desafio]]] = {}
+class PedidoResposta(BaseModel):
+    codigo: str
+    resposta: Any = None
+    sessao: str = "anonima"
 
-_STATUS_QR = {"nulo": 400, "vazio": 400, "corrompido": 422, "repetido": 409}
+
+# Progresso de uma sessão: {codigo_qr: (QRCode, Desafio)}
+Progresso = dict[str, tuple[QRCode, Desafio]]
+
+# Progresso em memória, por sessão
+_SESSOES: dict[str, Progresso] = {}
+
+_STATUS_QR = {
+    EstadoQR.NULO: 400,
+    EstadoQR.VAZIO: 400,
+    EstadoQR.CORROMPIDO: 422,
+    EstadoQR.REPETIDO: 409,
+}
+
+
+def _recompensa_da_sessao(progresso: Progresso) -> Recompensa:
+    return Recompensa(sum(1 for _, desafio in progresso.values() if desafio.resolvido))
+
+
+def _qr_da_sessao(progresso: Progresso, codigo: Any) -> QRCode:
+    """Reaproveita o QRCode já lido na sessão, para detetar leituras repetidas."""
+    if isinstance(codigo, str) and codigo in progresso:
+        return progresso[codigo][0]
+    return QRCode(codigo)
+
+
+def _erro_validacao(status_code: int, estado: str) -> HTTPException:
+    return HTTPException(
+        status_code=status_code,
+        detail={"valido": False, "estado": str(estado)},
+    )
+
+
+def _como_pista(obra: Obra, desafio: Desafio) -> dict:
+    return {
+        "codigo_qr": obra.codigo_qr,
+        "obra_id": obra.id,
+        "titulo": obra.titulo,
+        "sala": obra.sala,
+        "tipo": desafio.tipo,
+        "pergunta": desafio.pergunta,
+        "resolvido": desafio.resolvido,
+    }
 
 
 @app.post("/qr/validar")
 def validar_qr(pedido: PedidoQR) -> dict:
+    """Valida o QR Code lido e desbloqueia o desafio da obra (US-03)."""
+    if pedido.tipo not in DesafioFactory.TIPOS:
+        raise _erro_validacao(400, ESTADO_TIPO_INVALIDO)
     logger.info("Validação de QR pedida: codigo=%r", pedido.codigo)  # NUEVO
+    
     progresso = _SESSOES.setdefault(pedido.sessao, {})
-    existente = progresso.get(pedido.codigo) if isinstance(pedido.codigo, str) else None
-    qr = existente[0] if existente else QRCode(pedido.codigo)
-
+    qr = _qr_da_sessao(progresso, pedido.codigo)
     if not qr.validar():
         logger.warning(  # NUEVO
             "QR rejeitado: codigo=%r estado=%s", pedido.codigo, qr.estado
         )
-        raise HTTPException(
-            status_code=_STATUS_QR[qr.estado],
-            detail={"valido": False, "estado": qr.estado},
-        )
-
-    desafio = DesafioFactory().criarDesafio(qr)
+        raise _erro_validacao(_STATUS_QR[qr.estado], qr.estado)
+        
+    desafio = DesafioFactory().criarDesafio(qr, pedido.tipo)
     progresso[qr.codigo] = (qr, desafio)
     obra = _obra_por_codigo(qr.codigo)
     logger.info("QR validado: codigo=%s obra=%s", qr.codigo, obra.id)  # NUEVO
@@ -387,29 +550,45 @@ def validar_qr(pedido: PedidoQR) -> dict:
         "estado": qr.estado,
         "codigo": qr.codigo,
         "obra": {"id": obra.id, "titulo": obra.titulo, "sala": obra.sala},
-        "desafio": {"pergunta": desafio.pergunta, "resolvido": desafio.resolvido},
+        "desafio": {
+            "tipo": desafio.tipo,
+            "pergunta": desafio.pergunta,
+            "resolvido": desafio.resolvido,
+        },
+    }
+
+
+@app.post("/desafios/responder")
+def responder_desafio(pedido: PedidoResposta) -> dict:
+    """Verifica a resposta a um desafio desbloqueado e devolve a recompensa."""
+    progresso = _SESSOES.get(pedido.sessao, {})
+    if pedido.codigo not in progresso:
+        raise HTTPException(
+            status_code=404, detail={"estado": ESTADO_NAO_DESBLOQUEADO}
+        )
+    _, desafio = progresso[pedido.codigo]
+    correta = desafio.verificarResposta(pedido.resposta)
+    return {
+        "correta": correta,
+        "resolvido": desafio.resolvido,
+        "recompensa": _recompensa_da_sessao(progresso).como_dict(),
     }
 
 
 @app.get("/pistas")
 def listar_pistas(sessao: str = "anonima") -> dict:
+    """Lista as pistas desbloqueadas na sessão e a recompensa atual."""
     progresso = _SESSOES.get(sessao, {})
-    pistas = []
-    for codigo, (_, desafio) in progresso.items():
-        obra = _obra_por_codigo(codigo)
-        pistas.append(
-            {
-                "codigo_qr": codigo,
-                "obra_id": obra.id,
-                "titulo": obra.titulo,
-                "sala": obra.sala,
-                "pergunta": desafio.pergunta,
-                "resolvido": desafio.resolvido,
-            }
-        )
+    obras = carregar_museu_json()
+    obras_por_codigo = {obra.codigo_qr: obra for obra in obras}
+    pistas = [
+        _como_pista(obras_por_codigo[codigo], desafio)
+        for codigo, (_, desafio) in progresso.items()
+    ]
     return {
         "sessao": sessao,
-        "total_obras": len(carregar_museu_json()),
+        "total_obras": len(obras),
         "desbloqueadas": len(pistas),
+        "recompensa": _recompensa_da_sessao(progresso).como_dict(),
         "pistas": pistas,
     }
