@@ -65,6 +65,37 @@ class TestRoteiro(unittest.TestCase):
         self.assertLessEqual(dados["tempo_total"], 30)
         self.assertGreater(len(dados["obras"]), 0)
 
+    def test_endpoint_roteiros60(self):
+        """Testa o endpoint GET /roteiros com tempo 60."""
+        response = client.get("/roteiros?tempo=60&interesse=Escultura&estrategia=curta")
+        self.assertEqual(response.status_code, 200)
+        dados = response.json()
+        self.assertLessEqual(dados["tempo_total"], 60)
+        self.assertGreater(len(dados["obras"]), 0)
+        for obra in dados["obras"]:
+            self.assertTrue( "escultura" in obra["tema"].lower() or "escultura" in obra["sala"].lower() )
+
+    def test_tempomax_4(self):
+        """Testa o endpoint com roteiros com 4 minutos, vai passar pois não há obras com tempo menor que 4 minutos."""
+        response = client.get("/roteiros?tempo=4&estrategia=curta")
+        self.assertEqual(response.status_code, 200)
+        dados = response.json()
+        self.assertEqual(dados["tempo_total"], 0)
+        self.assertEqual(len(dados["obras"]), 0)
+
+    def test_semobras(self):
+        """Testa o endpoint com interesse que não existe, deve retornar roteiro vazio."""
+        response = client.get("/roteiros?tempo=30&interesse=astronomia&estrategia=curta")
+        self.assertEqual(response.status_code, 200)
+        dados = response.json()
+        self.assertEqual(dados["tempo_total"], 0)
+        self.assertEqual(len(dados["obras"]), 0)
+
+    def test_list_roteiros_vazia(self):
+        """Teste para roteiros vazios"""
+        roteiro = gerador_roteiro([], 60, "")
+        self.assertEqual(len(roteiro.obras), 0)
+        self.assertEqual(roteiro.calcular_tempo_total(), 0)
 
 if __name__ == "__main__":
     unittest.main()

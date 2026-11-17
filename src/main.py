@@ -117,19 +117,22 @@ class RoteiroStrategy(ABC):
     def calcular_rota(self, obras: list[Obra], tempo_max: int) -> list[Obra]:
         pass
 
+def calcular_necessidades_obras(obras: list[Obra], tempo_max: int) -> list[Obra]:
+    """Percorre as obras pela ordem dada e guarda as que ainda cabem no tempo."""
+    selecionadas = []
+    tempo_atual = 0
+    for obra in obras:
+        if tempo_atual + obra.minutos_visita <= tempo_max:
+            selecionadas.append(obra)
+            tempo_atual += obra.minutos_visita
+    return selecionadas
 
 class RotaMaisCurta(RoteiroStrategy):
     """Prioriza obras com menor tempo de visita para maximizar peças vistas."""
 
     def calcular_rota(self, obras: list[Obra], tempo_max: int) -> list[Obra]:
         obras_ordenadas = sorted(obras, key=lambda o: o.minutos_visita)
-        selecionadas = []
-        tempo_atual = 0
-        for obra in obras_ordenadas:
-            if tempo_atual + obra.minutos_visita <= tempo_max:
-                selecionadas.append(obra)
-                tempo_atual += obra.minutos_visita
-        return selecionadas
+        return calcular_necessidades_obras(obras_ordenadas, tempo_max)
 
 
 class RotaMenosCrowded(RoteiroStrategy):
@@ -137,28 +140,14 @@ class RotaMenosCrowded(RoteiroStrategy):
 
     def calcular_rota(self, obras: list[Obra], tempo_max: int) -> list[Obra]:
         obras_ordenadas = sorted(obras, key=lambda o: o.id, reverse=True)
-        selecionadas = []
-        tempo_atual = 0
-        for obra in obras_ordenadas:
-            if tempo_atual + obra.minutos_visita <= tempo_max:
-                selecionadas.append(obra)
-                tempo_atual += obra.minutos_visita
-        return selecionadas
-
+        return calcular_necessidades_obras(obras_ordenadas, tempo_max)
 
 class RotaFamiliar(RoteiroStrategy):
     """Prioriza obras com visita rápida (<= 8 min) adequadas para famílias."""
 
     def calcular_rota(self, obras: list[Obra], tempo_max: int) -> list[Obra]:
         obras_familiares = [o for o in obras if o.minutos_visita <= 8]
-        selecionadas = []
-        tempo_atual = 0
-        for obra in obras_familiares:
-            if tempo_atual + obra.minutos_visita <= tempo_max:
-                selecionadas.append(obra)
-                tempo_atual += obra.minutos_visita
-        return selecionadas
-
+        return calcular_necessidades_obras(obras_familiares, tempo_max)
 
 class Roteiro:
     def __init__(self, nome: str, strategy: RoteiroStrategy | None = None):
@@ -247,29 +236,22 @@ def gerador_roteiro(
     return roteiro
 
 
-@app.get("/roteiros")
-def obter_roteiro(
-    tempo: int = Query(60, gt=0),
-    interesse: str | None = None,
-    estrategia: str = "curta",
-) -> dict:
-    logger.info(  # NUEVO
-        "Roteiro pedido: tempo=%s interesse=%s estrategia=%s",
-        tempo,
-        interesse,
-        estrategia,
-    )
-    obras = carregar_museu_json()
-    mapa_estrategias = {
-        "curta": RotaMaisCurta(),
-        "menos_crowded": RotaMenosCrowded(),
-        "familiar": RotaFamiliar(),
-    }
-    if estrategia not in mapa_estrategias:  # NUEVO
-        logger.warning("Estratégia desconhecida '%s': a usar 'curta'", estrategia)
-    strat = mapa_estrategias.get(estrategia, RotaMaisCurta())
-    roteiro = gerador_roteiro(obras, tempo, interesse, strategy=strat)
-    logger.info("Roteiro gerado: %s min", roteiro.calcular_tempo_total())  # NUEVO
+ESTRATEGIAS: dict[str, type[RoteiroStrategy]] = {
+    "curta": RotaMaisCurta,
+    "menos_crowded": RotaMenosCrowded,
+    "familiar": RotaFamiliar,
+}
+
+def escolher_estrategia(nome: str) -> RoteiroStrategy:
+    """Devolve a estratégia pedida, ou RotaMaisCurta se o nome for desconhecido."""
+    if nome not in ESTRATEGIAS:
+        logger.warning("Estratégia desconhecida '%s': a usar 'curta'", nome)
+        return RotaMaisCurta()
+    return ESTRATEGIAS[nome]()
+
+
+def roteiro_para_dict(roteiro: Roteiro) -> dict:
+    """Converte o roteiro no formato JSON devolvido pela API."""
     return {
         "nome": roteiro.nome,
         "tempo_total": roteiro.calcular_tempo_total(),
@@ -285,6 +267,28 @@ def obter_roteiro(
             for o in roteiro.obras
         ],
     }
+
+
+@app.get("/roteiros")
+def obter_roteiro(
+    tempo: int = Query(60, gt=0),
+    interesse: str | None = None,
+    estrategia: str = "curta",
+) -> dict:
+    logger.info(
+        "Roteiro pedido: tempo=%s interesse=%s estrategia=%s",
+        tempo,
+        interesse,
+        estrategia,
+    )
+    roteiro = gerador_roteiro(
+        carregar_museu_json(),
+        tempo,
+        interesse,
+        strategy=escolher_estrategia(estrategia),
+    )
+    logger.info("Roteiro gerado: %s min", roteiro.calcular_tempo_total())
+    return roteiro_para_dict(roteiro)
 
 
 # --- Módulo B: Caça ao Tesouro (QR Code + Padrão Factory) ---
@@ -525,27 +529,26 @@ def _como_pista(obra: Obra, desafio: Desafio) -> dict:
         "resolvido": desafio.resolvido,
     }
 
-
 @app.post("/qr/validar")
 def validar_qr(pedido: PedidoQR) -> dict:
     """Valida o QR Code lido e desbloqueia o desafio da obra (US-03)."""
     if pedido.tipo not in DesafioFactory.TIPOS:
         raise _erro_validacao(400, ESTADO_TIPO_INVALIDO)
     logger.info("Validação de QR pedida: codigo=%r", pedido.codigo)  # NUEVO
-    
+
     progresso = _SESSOES.setdefault(pedido.sessao, {})
     qr = _qr_da_sessao(progresso, pedido.codigo)
     if not qr.validar():
-        logger.warning(  # NUEVO
+        logger.warning(
             "QR rejeitado: codigo=%r estado=%s", pedido.codigo, qr.estado
         )
         raise _erro_validacao(_STATUS_QR[qr.estado], qr.estado)
-        
+
     desafio = DesafioFactory().criarDesafio(qr, pedido.tipo)
     progresso[qr.codigo] = (qr, desafio)
     obra = _obra_por_codigo(qr.codigo)
-    logger.info("QR validado: codigo=%s obra=%s", qr.codigo, obra.id)  # NUEVO
-    return  {
+    logger.info("QR validado: codigo=%s obra=%s", qr.codigo, obra.id)
+    return {
         "valido": True,
         "estado": qr.estado,
         "codigo": qr.codigo,
