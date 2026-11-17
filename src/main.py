@@ -236,6 +236,7 @@ def gerador_roteiro(
     return roteiro
 
 
+<<<<<<< HEAD
 ESTRATEGIAS: dict[str, type[RoteiroStrategy]] = {
     "curta": RotaMaisCurta,
     "menos_crowded": RotaMenosCrowded,
@@ -252,6 +253,31 @@ def escolher_estrategia(nome: str) -> RoteiroStrategy:
 
 def roteiro_para_dict(roteiro: Roteiro) -> dict:
     """Converte o roteiro no formato JSON devolvido pela API."""
+=======
+@app.get("/roteiros")
+def obter_roteiro(
+    tempo: int = Query(60, gt=0),
+    interesse: str | None = None,
+    estrategia: str = "curta",
+) -> dict:
+    logger.info(  
+        "Roteiro pedido: tempo=%s interesse=%s estrategia=%s",
+        tempo,
+        interesse,
+        estrategia,
+    )
+    obras = carregar_museu_json()
+    mapa_estrategias = {
+        "curta": RotaMaisCurta(),
+        "menos_crowded": RotaMenosCrowded(),
+        "familiar": RotaFamiliar(),
+    }
+    if estrategia not in mapa_estrategias:  
+        logger.warning("Estratégia desconhecida '%s': a usar 'curta'", estrategia)
+    strat = mapa_estrategias.get(estrategia, RotaMaisCurta())
+    roteiro = gerador_roteiro(obras, tempo, interesse, strategy=strat)
+    logger.info("Roteiro gerado: %s min", roteiro.calcular_tempo_total()) 
+>>>>>>> 7b5c6e637ebee33a8337e9c09cf7a1406e8a9da1
     return {
         "nome": roteiro.nome,
         "tempo_total": roteiro.calcular_tempo_total(),
@@ -534,12 +560,21 @@ def validar_qr(pedido: PedidoQR) -> dict:
     """Valida o QR Code lido e desbloqueia o desafio da obra (US-03)."""
     if pedido.tipo not in DesafioFactory.TIPOS:
         raise _erro_validacao(400, ESTADO_TIPO_INVALIDO)
+<<<<<<< HEAD
     logger.info("Validação de QR pedida: codigo=%r", pedido.codigo)  # NUEVO
 
     progresso = _SESSOES.setdefault(pedido.sessao, {})
     qr = _qr_da_sessao(progresso, pedido.codigo)
     if not qr.validar():
         logger.warning(
+=======
+    logger.info("Validação de QR pedida: codigo=%r", pedido.codigo) 
+    
+    progresso = _SESSOES.setdefault(pedido.sessao, {})
+    qr = _qr_da_sessao(progresso, pedido.codigo)
+    if not qr.validar():
+        logger.warning(  
+>>>>>>> 7b5c6e637ebee33a8337e9c09cf7a1406e8a9da1
             "QR rejeitado: codigo=%r estado=%s", pedido.codigo, qr.estado
         )
         raise _erro_validacao(_STATUS_QR[qr.estado], qr.estado)
@@ -547,8 +582,13 @@ def validar_qr(pedido: PedidoQR) -> dict:
     desafio = DesafioFactory().criarDesafio(qr, pedido.tipo)
     progresso[qr.codigo] = (qr, desafio)
     obra = _obra_por_codigo(qr.codigo)
+<<<<<<< HEAD
     logger.info("QR validado: codigo=%s obra=%s", qr.codigo, obra.id)
     return {
+=======
+    logger.info("QR validado: codigo=%s obra=%s", qr.codigo, obra.id) 
+    return  {
+>>>>>>> 7b5c6e637ebee33a8337e9c09cf7a1406e8a9da1
         "valido": True,
         "estado": qr.estado,
         "codigo": qr.codigo,
