@@ -2,114 +2,193 @@
 skinparam classAttributeIconSize 0
 hide empty members
 
-' --- Domínio Base (Alinhado com src/main.py) ---
-class Sala {
-  - nome: String
-  - obras: List<Obra>
-  + adicionar_obra(obra: Obra)
+title MNSR Digital - Diagrama de Classes (alinhado com src/main.py e src/afluencia.py)
+
+package "src/main.py" {
+
+  ' --- Domínio base ---
+  class Obra {
+    - id: int
+    - titulo: String
+    - autor: String
+    - minutos_visita: int
+    - sala: String
+    - tema: String
+    - codigo_qr: String
+  }
+
+  class Sala {
+    - nome: String
+    - obras: List<Obra>
+    + adicionar_obra(obra: Obra)
+  }
+
+  class Roteiro {
+    - nome: String
+    - obras: List<Obra>
+    - strategy: RoteiroStrategy
+    + adicionar_obra(obra: Obra)
+    + calcular_tempo_total(): int
+  }
+
+  class "gerador_roteiro()" as GeradorRoteiro <<função de módulo>> {
+    + gerador_roteiro(obras, tempo_max, interesse, strategy): Roteiro
+  }
+
+  ' --- Módulo A: Roteiros (Padrão Strategy) ---
+  abstract class RoteiroStrategy {
+    + {abstract} calcular_rota(obras: List<Obra>, tempo_max: int): List<Obra>
+  }
+
+  class RotaMaisCurta {
+    + calcular_rota(obras: List<Obra>, tempo_max: int): List<Obra>
+  }
+
+  class RotaMenosCrowded {
+    + calcular_rota(obras: List<Obra>, tempo_max: int): List<Obra>
+  }
+
+  class RotaFamiliar {
+    + calcular_rota(obras: List<Obra>, tempo_max: int): List<Obra>
+  }
+
+  RotaMaisCurta --|> RoteiroStrategy
+  RotaMenosCrowded --|> RoteiroStrategy
+  RotaFamiliar --|> RoteiroStrategy
+
+  Sala "1" o-- "0..*" Obra : contém >
+  Roteiro "1" o-- "0..*" Obra : inclui >
+  Roteiro --> "1" RoteiroStrategy : strategy (por omissão RotaMaisCurta)
+  GeradorRoteiro ..> Roteiro : <<cria>>
+  GeradorRoteiro ..> RoteiroStrategy : usa >
+
+  ' --- Módulo B: Caça ao Tesouro (Padrão Factory) ---
+  enum EstadoQR {
+    PENDENTE
+    VALIDADO
+    NULO
+    VAZIO
+    CORROMPIDO
+    REPETIDO
+  }
+
+  class QRCode {
+    - codigo: Any
+    - estado: EstadoQR
+    + validar(): boolean
+    - _classificar(): EstadoQR
+  }
+
+  class Desafio {
+    + tipo: String
+    - pergunta: String
+    - resolvido: boolean
+    - _resposta_correta: String
+    + verificarResposta(resposta: Any): boolean
+  }
+
+  class DesafioPergunta {
+    + tipo = "pergunta"
+  }
+
+  class DesafioQR {
+    + tipo = "qr"
+  }
+
+  class DesafioBeacon {
+    + tipo = "beacon"
+  }
+
+  class DesafioFactory {
+    + TIPOS: List<String>
+    + criarDesafio(dadosQR: QRCode, tipo: String): Desafio
+    - _criar_pergunta(obra: Obra): DesafioPergunta
+    - _criar_qr(obra: Obra): DesafioQR
+    - _criar_beacon(obra: Obra): DesafioBeacon
+  }
+
+  class Recompensa {
+    + NIVEIS: List<(int, String, int)>
+    - resolvidos: int
+    - medalha: String
+    - desconto: int
+    + como_dict(): Map
+  }
+
+  DesafioPergunta --|> Desafio
+  DesafioQR --|> Desafio
+  DesafioBeacon --|> Desafio
+
+  QRCode ..> EstadoQR : usa >
+  QRCode ..> Obra : valida codigo_qr contra o acervo >
+  DesafioFactory ..> QRCode : lê estado VALIDADO >
+  DesafioFactory ..> Obra : consulta autor/sala por codigo_qr >
+  DesafioFactory ..> DesafioPergunta : <<instancia>>
+  DesafioFactory ..> DesafioQR : <<instancia>>
+  DesafioFactory ..> DesafioBeacon : <<instancia>>
+
+  note bottom of QRCode
+    pendente -> validado | nulo | vazio | corrompido
+    validado + nova leitura -> repetido
+  end note
+
+  note bottom of DesafioFactory
+    pergunta: autor conhecido -> pergunta pelo autor, senão pela sala.
+    qr: pista para o QR da obra seguinte (acervo circular).
+    beacon: simulado (o cliente envia o id do beacon).
+    QR não validado ou tipo desconhecido -> ValueError.
+  end note
+
+  note bottom of Recompensa
+    Construída com o nº de desafios resolvidos da sessão
+    (_recompensa_da_sessao). 3 / 6 / 10 resolvidos ->
+    Bronze 5% / Prata 10% / Ouro 15%.
+  end note
 }
 
-class Obra {
-  - id: int
-  - titulo: String
-  - autor: String
-  - minutos_visita: int
+package "src/afluencia.py" {
+
+  ' --- Módulo D: Afluência (Padrão Observer) ---
+  abstract class ObservadorAfluencia {
+    + {abstract} atualizar(afluencia: AfluenciaSala)
+  }
+
+  class AfluenciaSala <<Subject>> {
+    - sala: String
+    - limite_maximo: int
+    - visitantes_atuais: int
+    - _lotada: boolean
+    - _observadores: List<ObservadorAfluencia>
+    + adicionar_observador(observador: ObservadorAfluencia)
+    + remover_observador(observador: ObservadorAfluencia)
+    + registar_entrada()
+    + registar_saida()
+    + notificar_limiar()
+  }
+
+  class NotificadorApp {
+    - mensagens: List<String>
+    + atualizar(afluencia: AfluenciaSala)
+  }
+
+  AfluenciaSala "1" o-- "0..*" ObservadorAfluencia : notifica >
+  NotificadorApp --|> ObservadorAfluencia
+
+  note bottom of AfluenciaSala
+    Notifica apenas quando o estado "lotada" muda
+    (visitantes_atuais >= limite_maximo, e o inverso).
+    Identifica a sala pelo nome (String).
+  end note
 }
 
-class Roteiro {
-  - nome: String
-  - salas: List<Sala>
-  - obras: List<Obra>
-  + adicionar_obra(obra: Obra)
-  + calcular_tempo_total(): int
+package "Planeado (M5 - Módulo C, ainda não implementado)" {
+
+  ' --- Módulo RAG (Inteligência Artificial) ---
+  class AssistenteIA <<planeado>> {
+    + responder_pergunta(obra: Obra, pergunta: String, faixa_etaria: String): String
+  }
+
+  AssistenteIA ..> Obra : consulta contexto >
 }
-
-Sala "1" o-- "0..*" Obra : contém >
-Roteiro "1" o-- "0..*" Obra : inclui >
-
-' --- Módulo A: Roteiros (Padrão Strategy) ---
-interface RoteiroStrategy {
-  + calcular_rota(obras: List<Obra>): List<Obra>
-}
-
-class RotaMaisCurta implements RoteiroStrategy {
-  + calcular_rota(obras: List<Obra>): List<Obra>
-}
-
-class RotaMenosCrowded implements RoteiroStrategy {
-  + calcular_rota(obras: List<Obra>): List<Obra>
-}
-
-class RotaFamiliar implements RoteiroStrategy {
-  + calcular_rota(obras: List<Obra>): List<Obra>
-}
-
-Roteiro "1" *-- "1" RoteiroStrategy : utiliza >
-
-' --- Módulo B: Caça ao Tesouro (Padrão Factory Method) ---
-enum EstadoQR {
-  PENDENTE
-  VALIDADO
-  NULO
-  VAZIO
-  CORROMPIDO
-  REPETIDO
-}
-
-class QRCode {
-  - codigo: String
-  - estado: EstadoQR
-  + validar(): boolean
-}
-
-QRCode ..> EstadoQR : usa >
-
-class Desafio {
-  - pergunta: String
-  - resolvido: boolean
-  - respostaCorreta: String
-  + tipo: String
-  + verificarResposta(resposta: String): boolean
-}
-
-class DesafioPergunta extends Desafio
-class DesafioQR extends Desafio
-class DesafioBeacon extends Desafio
-
-class DesafioFactory {
-  + TIPOS: List<String>
-  + criarDesafio(dadosQR: QRCode, tipo: String): Desafio
-}
-
-class Recompensa {
-  - resolvidos: int
-  - medalha: String
-  - desconto: int
-  + como_dict(): Map
-}
-
-DesafioFactory ..> DesafioPergunta : <<instancia>>
-DesafioFactory ..> DesafioQR : <<instancia>>
-DesafioFactory ..> DesafioBeacon : <<instancia>>
-Desafio "1" -- "1" QRCode : associado a >
-Recompensa ..> Desafio : conta resolvidos >
-
-' --- Padrão Observer (Monitorização) ---
-class AfluenciaSala {
-  - visitantesAtuais: int
-  - limiteMaximo: int
-  + registarEntrada()
-  + registarSaida()
-  + notificarLimiar()
-}
-
-AfluenciaSala "1" -- "1" Sala : monitoriza >
-
-' --- Módulo RAG (Inteligência Artificial) ---
-class AssistenteIA {
-  + responderPergunta(obra: Obra, pergunta: String): String
-}
-
-AssistenteIA ..> Obra : consulta contexto >
 
 @enduml

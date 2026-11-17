@@ -11,7 +11,7 @@ Luis Santos 2025111261
 Rodrigo Pereira 2025113163
 
 
-**Marco atual:** M1: Engenharia de Requisitos
+**Marco atual:** M2: Modelação UML e Arquitetura
 
 ---
 
@@ -72,10 +72,37 @@ Cada User Story segue a estrutura *Como… quero… para que…*, os 3 Cs (Card,
 
 ---
 
+## Como instalar, executar e testar
+
+Requisitos: Python 3.12. Todos os comandos correm na raiz do repositório.
+
+```bash
+# Criar e ativar o ambiente virtual
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+
+# Instalar dependências
+pip install -r requirements.txt
+
+# Executar a API (documentação interativa em http://127.0.0.1:8000/docs)
+uvicorn src.main:app --reload
+
+# Testes com cobertura (o CI exige >= 80%)
+python -m pytest --cov=src --cov-report=term-missing --cov-fail-under=80
+
+# Linter
+ruff check src/ test/
+```
+
+---
+
 ## Documentação
 
 - Product Backlog: [MNSR Digital — Product Backlog](<https://github.com/users/2025113163-lab/projects/1/views/1>)
 - Matriz de rastreabilidade: [docs/TRACEABILITY.md](docs/TRACEABILITY.md)
+- Decisões de arquitetura: [ADR-01](docs/adr/ADR-01-arquitetura-em-camadas-rest.md) · [ADR-02](docs/adr/ADR-02-bd-local-offline.md) · [ADR-03](docs/adr/ADR-03-stack-python-fastapi.md)
+- Diagrama de classes: [docs/diagrama_classes.puml](docs/diagrama_classes.puml)
+- Diagramas de sequência: [Gerar roteiro](docs/sequencia_roteiro.png) · [Pergunta ao assistente de IA](docs/sequencia_assistente_ia.png)
 
 ## Organização do trabalho
 
