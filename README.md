@@ -80,7 +80,7 @@ Cada User Story segue a estrutura *Como… quero… para que…*, os 3 Cs (Card,
 |---|---|---|
 | M0 | Arranque e governação de IA | Concluído |
 | M1 | Requisitos e agilidade | Concluído |
-| M2 | Modelação UML e arquitetura | Em fecho (diagramas de sequência e ADRs) |
+| M2 | Modelação UML e arquitetura | Concluído |
 | M3 | Core funcional (Módulos A e B), testes | Concluído (54 testes, cobertura de 96%) |
 | M4 | CI/CD e logging | CI e logging JSON feitos; falta o diagnóstico de bugs documentado |
 | M5 | Segurança, padrões GoF e RAG | Pendente (Strategy e Factory feitos; Observer e RAG por fazer) |
