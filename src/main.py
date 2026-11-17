@@ -253,7 +253,7 @@ def obter_roteiro(
     interesse: str | None = None,
     estrategia: str = "curta",
 ) -> dict:
-    logger.info(  # NUEVO
+    logger.info(  
         "Roteiro pedido: tempo=%s interesse=%s estrategia=%s",
         tempo,
         interesse,
@@ -265,11 +265,11 @@ def obter_roteiro(
         "menos_crowded": RotaMenosCrowded(),
         "familiar": RotaFamiliar(),
     }
-    if estrategia not in mapa_estrategias:  # NUEVO
+    if estrategia not in mapa_estrategias:  
         logger.warning("Estratégia desconhecida '%s': a usar 'curta'", estrategia)
     strat = mapa_estrategias.get(estrategia, RotaMaisCurta())
     roteiro = gerador_roteiro(obras, tempo, interesse, strategy=strat)
-    logger.info("Roteiro gerado: %s min", roteiro.calcular_tempo_total())  # NUEVO
+    logger.info("Roteiro gerado: %s min", roteiro.calcular_tempo_total()) 
     return {
         "nome": roteiro.nome,
         "tempo_total": roteiro.calcular_tempo_total(),
@@ -531,12 +531,12 @@ def validar_qr(pedido: PedidoQR) -> dict:
     """Valida o QR Code lido e desbloqueia o desafio da obra (US-03)."""
     if pedido.tipo not in DesafioFactory.TIPOS:
         raise _erro_validacao(400, ESTADO_TIPO_INVALIDO)
-    logger.info("Validação de QR pedida: codigo=%r", pedido.codigo)  # NUEVO
+    logger.info("Validação de QR pedida: codigo=%r", pedido.codigo) 
     
     progresso = _SESSOES.setdefault(pedido.sessao, {})
     qr = _qr_da_sessao(progresso, pedido.codigo)
     if not qr.validar():
-        logger.warning(  # NUEVO
+        logger.warning(  
             "QR rejeitado: codigo=%r estado=%s", pedido.codigo, qr.estado
         )
         raise _erro_validacao(_STATUS_QR[qr.estado], qr.estado)
@@ -544,7 +544,7 @@ def validar_qr(pedido: PedidoQR) -> dict:
     desafio = DesafioFactory().criarDesafio(qr, pedido.tipo)
     progresso[qr.codigo] = (qr, desafio)
     obra = _obra_por_codigo(qr.codigo)
-    logger.info("QR validado: codigo=%s obra=%s", qr.codigo, obra.id)  # NUEVO
+    logger.info("QR validado: codigo=%s obra=%s", qr.codigo, obra.id) 
     return  {
         "valido": True,
         "estado": qr.estado,
